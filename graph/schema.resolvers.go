@@ -8,11 +8,59 @@ import (
 	"fmt"
 	"graphql_server_gqlgen/graph/generated"
 	"graphql_server_gqlgen/graph/model"
+	"log"
+	"strconv"
 )
+
+var BOOKSTORE = []*model.Book{}
+
+func nextBookID() (string, error) {
+	fmt.Println("Finding next Book ID")
+	if len(BOOKSTORE) < 1 {
+		fmt.Println("Next BOOKID: 1")
+		return "1", nil
+	}
+	max := *BOOKSTORE[0].BookID
+	for _, book := range BOOKSTORE {
+		cBookID, err := strconv.Atoi(*book.BookID)
+		if err != nil {
+			return "0", err
+		}
+		maxVar, err := strconv.Atoi(max)
+		if err != nil {
+			return "0", err
+		}
+		if cBookID > maxVar {
+			max = *book.BookID
+		}
+	}
+	maxInt, _ := strconv.Atoi(max)
+	max = strconv.Itoa(maxInt + 1)
+	fmt.Println("Next BOOKID : ", max)
+	return max, nil
+}
 
 // AddBook is the resolver for the add_book field.
 func (r *mutationResolver) AddBook(ctx context.Context, input model.BookInput) (*model.PostStatus, error) {
-	panic(fmt.Errorf("not implemented: AddBook - add_book"))
+	log.Println("Adding BOOK to the BOOKSTORE")
+	fmt.Printf("%v\n", input)
+	a := input.Authors
+	var authorList = []*model.Author{}
+	for _, auth := range a {
+		authorList = append(authorList, &model.Author{Name: auth.Name, Mail: auth.Mail})
+	}
+	bookID, err := nextBookID()
+	if err != nil {
+		fmt.Println(err)
+		des := "Internal errror"
+		return &model.PostStatus{Iserror: true, Description: &des}, nil
+	}
+	gBook := model.Book{Title: input.Title, Genre: input.Genre, Authors: authorList, BookID: &bookID}
+	BOOKSTORE = append(BOOKSTORE, &gBook)
+	log.Println("Successfully added the book.")
+	des := "Successfully added"
+	fmt.Printf("BOOKSTORE : %v\n", &BOOKSTORE)
+	return &model.PostStatus{Iserror: false, Description: &des, BookID: &bookID}, nil
 }
 
 // UpdateBook is the resolver for the update_book field.
@@ -32,13 +80,7 @@ func (r *queryResolver) Book(ctx context.Context, bookID string) (*model.GetBook
 
 // Books is the resolver for the books field.
 func (r *queryResolver) Books(ctx context.Context) ([]*model.Book, error) {
-	bookGenre := model.BookGenre("FICTION")
-	bookID := "1"
-	mail := "logesh@mail.com"
-	var authorList = []*model.Author{{Name: "Logesh", Mail: &mail}}
-	reVal := &model.Book{Title: "Empty title", BookID: &bookID, Genre: &bookGenre, Authors: authorList}
-	var returnList = []*model.Book{reVal}
-	return returnList, nil
+	return BOOKSTORE, nil
 }
 
 // Getbooks is the resolver for the getbooks field.
