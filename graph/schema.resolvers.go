@@ -87,7 +87,6 @@ func deleteBookFromBookStore(bookid string) (bool, string) {
 // AddBook is the resolver for the add_book field.
 func (r *mutationResolver) AddBook(ctx context.Context, input model.BookInput) (*model.PostStatus, error) {
 	log.Println("Adding BOOK to the BOOKSTORE")
-	fmt.Printf("%v\n", input)
 	a := input.Authors
 	var authorList = []*model.Author{}
 	for _, auth := range a {
@@ -103,14 +102,15 @@ func (r *mutationResolver) AddBook(ctx context.Context, input model.BookInput) (
 	BOOKSTORE = append(BOOKSTORE, &gBook)
 	log.Println("Successfully added the book.")
 	des := "Successfully added"
-	fmt.Printf("BOOKSTORE : %v\n", &BOOKSTORE)
 	return &model.PostStatus{Iserror: false, Description: &des, BookID: &bookID}, nil
 }
 
 // UpdateBook is the resolver for the update_book field.
 func (r *mutationResolver) UpdateBook(ctx context.Context, input *model.UpdateInput) (*model.PutStatus, error) {
 	var bookId = input.BookID
+	log.Printf("Updating the book (BookID : %s) from the BOOKSTORE\n", bookId)
 	res, des := updateBookStore(bookId, input)
+	log.Println(des)
 	if res {
 		return &model.PutStatus{Iserror: false, Description: &des}, nil
 	}
@@ -120,7 +120,9 @@ func (r *mutationResolver) UpdateBook(ctx context.Context, input *model.UpdateIn
 
 // DeleteBook is the resolver for the delete_book field.
 func (r *mutationResolver) DeleteBook(ctx context.Context, bookID string) (*model.DeleteStatus, error) {
+	log.Printf("Deleting the book (BookID : %s) from the BOOKSTORE\n", bookID)
 	res, des := deleteBookFromBookStore(bookID)
+	log.Println(des)
 	if res {
 		return &model.DeleteStatus{Iserror: false, Description: &des}, nil
 	}
@@ -130,6 +132,7 @@ func (r *mutationResolver) DeleteBook(ctx context.Context, bookID string) (*mode
 
 // Book is the resolver for the book field.
 func (r *queryResolver) Book(ctx context.Context, bookID string) (*model.GetBookResult, error) {
+	log.Println("Getting Book ", bookID, " from BOOKSTORE")
 	for _, book := range BOOKSTORE {
 		if *book.BookID == bookID {
 			return &model.GetBookResult{Isexists: true, Book: book}, nil
@@ -141,11 +144,13 @@ func (r *queryResolver) Book(ctx context.Context, bookID string) (*model.GetBook
 
 // Books is the resolver for the books field.
 func (r *queryResolver) Books(ctx context.Context) ([]*model.Book, error) {
+	log.Println("Getting all Books from BOOKSTORE")
 	return BOOKSTORE, nil
 }
 
 // Getbooks is the resolver for the getbooks field.
 func (r *queryResolver) Getbooks(ctx context.Context, getgenre *model.BookGenre) ([]*model.Book, error) {
+	log.Println("Getting books which are ", getgenre, " from BOOKSTORE")
 	var returnList = []*model.Book{}
 	for _, book := range BOOKSTORE {
 		if *book.Genre == *getgenre {
