@@ -41,7 +41,7 @@ func nextBookID() (string, error) {
 	return max, nil
 }
 
-func updateBookStore(bookid string, updatedBook *model.UpdateInput) bool {
+func updateBookStore(bookid string, updatedBook *model.UpdateInput) (bool, string) {
 	for index, book := range BOOKSTORE {
 		if *book.BookID == bookid {
 			BOOKSTORE = append(BOOKSTORE[:index], BOOKSTORE[index+1:]...)
@@ -68,10 +68,20 @@ func updateBookStore(bookid string, updatedBook *model.UpdateInput) bool {
 			}
 			uBook := model.Book{BookID: &bookid, Title: uTitle, Genre: uGenre, Authors: uAuthorList}
 			BOOKSTORE = append(BOOKSTORE, &uBook)
-			return true
+			return true, "updation success"
 		}
 	}
-	return false
+	return false, "failed to find the bookid"
+}
+
+func deleteBookFromBookStore(bookid string) (bool, string) {
+	for index, book := range BOOKSTORE {
+		if *book.BookID == bookid {
+			BOOKSTORE = append(BOOKSTORE[:index], BOOKSTORE[index+1:]...)
+			return true, "Deletion success"
+		}
+	}
+	return false, "book ID not found to delete"
 }
 
 // AddBook is the resolver for the add_book field.
@@ -100,19 +110,22 @@ func (r *mutationResolver) AddBook(ctx context.Context, input model.BookInput) (
 // UpdateBook is the resolver for the update_book field.
 func (r *mutationResolver) UpdateBook(ctx context.Context, input *model.UpdateInput) (*model.PutStatus, error) {
 	var bookId = input.BookID
-	res := updateBookStore(bookId, input)
-	des := "Updation failed"
+	res, des := updateBookStore(bookId, input)
 	if res {
-		des = "Updation success"
 		return &model.PutStatus{Iserror: false, Description: &des}, nil
 	}
-	return &model.PutStatus{Iserror: true, Description: &des}, errors.New("book id not found")
+	return &model.PutStatus{Iserror: true, Description: &des}, errors.New(des)
 
 }
 
 // DeleteBook is the resolver for the delete_book field.
 func (r *mutationResolver) DeleteBook(ctx context.Context, bookID string) (*model.DeleteStatus, error) {
-	panic(fmt.Errorf("not implemented: DeleteBook - delete_book"))
+	res, des := deleteBookFromBookStore(bookID)
+	if res {
+		return &model.DeleteStatus{Iserror: false, Description: &des}, nil
+	}
+	return &model.DeleteStatus{Iserror: true, Description: &des}, errors.New(des)
+
 }
 
 // Book is the resolver for the book field.
