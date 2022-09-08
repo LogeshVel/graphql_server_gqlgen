@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"graphql_server_gqlgen/graph/generated"
 	"graphql_server_gqlgen/graph/model"
@@ -75,7 +76,13 @@ func (r *mutationResolver) DeleteBook(ctx context.Context, bookID string) (*mode
 
 // Book is the resolver for the book field.
 func (r *queryResolver) Book(ctx context.Context, bookID string) (*model.GetBookResult, error) {
-	panic(fmt.Errorf("not implemented: Book - book"))
+	for _, book := range BOOKSTORE {
+		if *book.BookID == bookID {
+			return &model.GetBookResult{Isexists: true, Book: book}, nil
+		}
+	}
+	return &model.GetBookResult{Isexists: false}, errors.New("bookid not found")
+
 }
 
 // Books is the resolver for the books field.
@@ -85,7 +92,13 @@ func (r *queryResolver) Books(ctx context.Context) ([]*model.Book, error) {
 
 // Getbooks is the resolver for the getbooks field.
 func (r *queryResolver) Getbooks(ctx context.Context, getgenre *model.BookGenre) ([]*model.Book, error) {
-	panic(fmt.Errorf("not implemented: Getbooks - getbooks"))
+	var returnList = []*model.Book{}
+	for _, book := range BOOKSTORE {
+		if *book.Genre == *getgenre {
+			returnList = append(returnList, book)
+		}
+	}
+	return returnList, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
